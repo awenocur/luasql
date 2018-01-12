@@ -1,13 +1,13 @@
 # Installation directories
 
 # Default prefix
-PREFIX ?= /usr
+PREFIX ?= /supervario/local
 
 # Lua version and dirs
-LUA_SYS_VER ?= 5.2
+LUA_SYS_VER ?= 5.3
 LUA_LIBDIR ?= $(PREFIX)/lib/lua/$(LUA_SYS_VER)
-LUA_DIR ?= $(PREFIX)/share/lua/$(LUA_SYS_VER)
-LUA_INC ?= $(PREFIX)/include/lua$(LUA_SYS_VER)
+LUA_DIR ?= $(PREFIX)/share
+LUA_INC ?= $(PREFIX)/include
 
 # OS dependent
 UNAME_S := $(shell uname -s)
@@ -49,6 +49,6 @@ DRIVER_INCS_firebird ?=
 WARN = -Wall -Wmissing-prototypes -Wmissing-declarations -pedantic
 INCS = -I$(LUA_INC)
 DEFS =
-CFLAGS = -O2 -std=gnu99 $(WARN) -fPIC $(DRIVER_INCS) $(INCS) \
+CFLAGS = -O0 -std=gnu99 $(WARN) -fPIC $(DRIVER_INCS) $(INCS) \
          -DLUASQL_VERSION_NUMBER='"$V"' $(DEFS)
 CC= gcc
