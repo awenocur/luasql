@@ -17,11 +17,14 @@ all :
 	@echo "usage: make { $(subst $(SPACE),$(SPACE)|$(SPACE),$(DRIVER_LIST)) }"
 
 # explicity matches against the list of avilable driver names
-$(DRIVER_LIST) : % : src/%.so
+$(DRIVER_LIST) : % : src/.clang_complete_% src/%.so
 
 # builds the specified driver
 src/%.so : src/ls_%.c $(OBJS) 
 	$(CC) $(CFLAGS) src/ls_$*.c -o $@ $(LIB_OPTION) $(OBJS) $(DRIVER_INCS_$*) $(DRIVER_LIBS_$*)
+
+src/.clang_complete_%:
+	echo $(CFLAGS) $(INCS) $(WARN) $(DRIVER_INCS_$*) | sed -e 's/  */\n/g' > src/.clang_complete
 
 # builds the general LuaSQL functions
 $(OBJS) : $(SRCS)
