@@ -49,6 +49,6 @@ DRIVER_INCS_firebird ?=
 WARN = -Wall -Wmissing-prototypes -Wmissing-declarations -pedantic
 INCS = -I$(LUA_INC)
 DEFS =
-CFLAGS = -O0 -std=gnu99 $(WARN) -fPIC $(DRIVER_INCS) $(INCS) \
+CFLAGS = -g -O0 -std=gnu99 $(WARN) -fPIC $(DRIVER_INCS) $(INCS) \
          -DLUASQL_VERSION_NUMBER='"$V"' $(DEFS)
 CC= gcc
