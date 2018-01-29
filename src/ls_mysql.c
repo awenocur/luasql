@@ -377,21 +377,17 @@ static int create_cursor (lua_State *L, int conn, MYSQL_RES *result, int cols) {
 /*
 ** Create a new Statement object and push it on top of the stack.
 */
-static int create_stmt (lua_State *L, int conn) {
-	conn_data *real_conn = getconnection(L);
-	MYSQL_STMT *my_stmt = mysql_stmt_init(real_conn->my_conn);
-	if(!my_stmt) return luasql_failmsg(L, "error generating prepared statement. MySQL: ", mysql_error(real_conn->my_conn));
-
+static int create_stmt (lua_State *L, conn_data *conn, const char *raw_statement) {
 	stmt_data *stmt = (stmt_data *)lua_newuserdata(L, sizeof(stmt_data));
 	luasql_setmeta (L, LUASQL_STATEMENT_MYSQL);
+	lua_getuservalue(L, 1); //should be the first argument, still
+	stmt->conn = luaL_ref (L, LUA_REGISTRYINDEX);
+	if(!stmt->conn) return luasql_failmsg(L, "error assigning connection to statement wrapper", "");
 
 	/* fill in structure */
 	stmt->closed = 0;
-	stmt->conn = LUA_NOREF;
-	stmt->my_stmt = my_stmt;
-	lua_pushvalue (L, conn);
-	stmt->conn = luaL_ref (L, LUA_REGISTRYINDEX);
-
+	stmt->my_stmt = mysql_stmt_init(conn->my_conn);
+	if(!stmt->my_stmt) return luasql_failmsg(L, "error generating prepared statement. MySQL: ", mysql_error(conn->my_conn));
 	return 1;
 }
 
@@ -479,29 +475,7 @@ static int conn_prepare (lua_State *L) {
 	conn_data *conn = getconnection (L);
 	size_t st_len;
 	const char *raw_statement = luaL_checklstring (L, 2, &st_len);
-	return create_stmt(L, conn);
-
-	if (mysql_real_query(conn->my_conn, statement, st_len)) 
-		/* error executing query */
-		return luasql_failmsg(L, "error executing query. MySQL: ", mysql_error(conn->my_conn));
-	else
-	{
-		MYSQL_RES *res = mysql_store_result(conn->my_conn);
-		unsigned int num_cols = mysql_field_count(conn->my_conn);
-
-		if (res) { /* tuples returned */
-			return create_cursor (L, 1, res, num_cols);
-		}
-		else { /* mysql_use_result() returned nothing; should it have? */
-			if(num_cols == 0) { /* no tuples returned */
-            	/* query does not return data (it was not a SELECT) */
-				lua_pushinteger(L, mysql_affected_rows(conn->my_conn));
-				return 1;
-        	}
-			else /* mysql_use_result() should have returned data */
-				return luasql_failmsg(L, "error retrieving result. MySQL: ", mysql_error(conn->my_conn));
-		}
-	}
+	return create_stmt(L, conn, raw_statement);
 }
 
 
@@ -658,9 +632,14 @@ static void create_metatables (lua_State *L) {
         {"numrows", cur_numrows},
 		{NULL, NULL},
     };
+    struct luaL_Reg stmt_methods[] = {
+	{"__gc", stmt_gc},
+		{NULL, NULL},
+    };
 	luasql_createmeta (L, LUASQL_ENVIRONMENT_MYSQL, environment_methods);
 	luasql_createmeta (L, LUASQL_CONNECTION_MYSQL, connection_methods);
 	luasql_createmeta (L, LUASQL_CURSOR_MYSQL, cursor_methods);
+	luasql_createmeta (L, LUASQL_STATEMENT_MYSQL, stmt_methods);
 	lua_pop (L, 3);
 }
 
